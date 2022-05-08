@@ -56,10 +56,12 @@ hi Normal ctermbg=NONE
 
 "" Ale configuration for ESLint, prettier and python
 let g:ale_fixers = {
-\    'javascriptreact': ['prettier'],
-\    'javascript': ['prettier'],
+\    'python': ['pyright', 'autopep8'],
+\    'javascriptreact': ['prettier', 'eslint'],
+\    'javascript': ['prettier', 'eslint'],
 \    'css': ['prettier']
 \}
+let g:ale_completion_enabled = 1
 
 "" CMP_Vim menu config
 set completeopt=menu,menuone,noselect
@@ -155,6 +157,7 @@ set encoding=UTF-8
 
 "" NvimTree Mappings
 nnoremap <C-n> :NvimTreeToggle<CR>
+nnoremap <C-r> :NvimTreeRefresh<CR>
 
 "" Telescope Mappings
 nnoremap <leader>ff :Telescope find_files<CR>
@@ -165,6 +168,8 @@ nnoremap <silent>\f :BufferLineCycleNext<CR>
 
 "" FTerm Mappings
 nnoremap <C-t> :lua require("FTerm").toggle()<CR>
+
+nnoremap <silent>\af :ALEFix<CR>
 
 "" Open terminal bellow files
 let g:term_buf = 0

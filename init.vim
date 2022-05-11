@@ -61,7 +61,6 @@ let g:ale_fixers = {
 \    'javascript': ['prettier', 'eslint'],
 \    'css': ['prettier']
 \}
-let g:ale_completion_enabled = 1
 
 "" CMP_Vim menu config
 set completeopt=menu,menuone,noselect
@@ -75,8 +74,13 @@ lua << eof
                 require('luasnip').lsp_expand(args.body)
             end
         },
+        window = {
+          completion = cmp.config.window.bordered(),
+          documentation = cmp.config.window.bordered(),
+        },
         mapping = cmp.mapping.preset.insert({
             ['<C-Space>'] = cmp.mapping.complete(),
+            ['<C-e>'] = cmp.mapping.abort(),
             ['<CR>'] = cmp.mapping.confirm({ select = true })
         }),
         sources = cmp.config.sources({

@@ -1,10 +1,11 @@
+"" -------- VIM BASIC CONFIG --------
+
 "" Nvim basic setup
 set nocompatible            " disable compatibility to old-time vi
 set showmatch               " show matching 
 set ignorecase              " case insensitive 
 set mouse=v                 " middle-click paste with
 set cursorline              " enable line location for the cursor position
-set cursorcolumn            " enable column location for the cursor position
 set hlsearch                " highlight search 
 set incsearch               " incremental search
 set visualbell              " dont make noise
@@ -18,23 +19,18 @@ set wrap                    " line wrap
 set number                  " add line numbers
 set ruler                   " add ruler
 set wildmode=longest,list   " get bash-like tab completions
-filetype plugin indent on   "allow auto-indenting depending on file type
+filetype plugin indent on   " allow auto-indenting depending on file type
 syntax on                   " syntax highlighting
 set mouse=a                 " enable mouse click
-set clipboard=unnamedplus   " using system clipboard
 filetype plugin on
+
+"" -------- INSTALATIONS AND IMPORT --------
 
 "" Plugin installation and calling
 call plug#begin('~/.config/nvim/plugged')
-   
-    Plug 'neovim/nvim-lspconfig'
-    Plug 'hrsh7th/cmp-nvim-lsp'
-    Plug 'hrsh7th/cmp-buffer'
-    Plug 'hrsh7th/cmp-path'
-    Plug 'hrsh7th/cmp-cmdline'
-    Plug 'hrsh7th/nvim-cmp'
-    Plug 'L3MON4D3/LuaSnip'
-    Plug 'saadparwaiz1/cmp_luasnip'
+  
+    Plug 'neoclide/coc.nvim', {'branch': 'release'}
+    Plug 'OmniSharp/omnisharp-vim'
     Plug 'lukas-reineke/indent-blankline.nvim'
     Plug 'tpope/vim-fugitive'
     Plug 'dense-analysis/ale'
@@ -43,63 +39,35 @@ call plug#begin('~/.config/nvim/plugged')
     Plug 'kyazdani42/nvim-tree.lua'
     Plug 'akinsho/bufferline.nvim', {'tag': '*'}
     Plug 'nvim-lualine/lualine.nvim'
+    Plug 'glepnir/dashboard-nvim'
     Plug 'nvim-lua/plenary.nvim'
-    Plug 'nvim-telescope/telescope.nvim'
+    Plug 'liuchengxu/vim-clap'
     Plug 'sonph/onehalf', {'rtp': 'vim/'}
+    Plug 'folke/which-key.nvim'
+    Plug 'xiyaowong/nvim-transparent'
+    Plug 'christoomey/vim-tmux-navigator'
 
 call plug#end()
 
-"" Terminal theme setup
-:colorscheme onehalfdark
-hi Normal ctermbg=NONE
-
-
-"" Ale configuration for ESLint, prettier and python
-let g:ale_fixers = {
-\    'python': ['pyright', 'autopep8'],
-\    'javascriptreact': ['prettier', 'eslint'],
-\    'javascript': ['prettier', 'eslint'],
-\    'css': ['prettier']
-\}
-
-"" CMP_Vim menu config
-set completeopt=menu,menuone,noselect
-
+"" Plugin importing with LUA
 lua << eof
-    -- cmp with LuaSnip configuration
-    local cmp = require 'cmp'
-    cmp.setup({
-        snippet = {
-            expand = function(args)
-                require('luasnip').lsp_expand(args.body)
-            end
-        },
-        window = {
-          completion = cmp.config.window.bordered(),
-          documentation = cmp.config.window.bordered(),
-        },
-        mapping = cmp.mapping.preset.insert({
-            ['<C-Space>'] = cmp.mapping.complete(),
-            ['<C-e>'] = cmp.mapping.abort(),
-            ['<CR>'] = cmp.mapping.confirm({ select = true })
-        }),
-        sources = cmp.config.sources({
-            { name = 'nvim_lsp' },
-            { name = 'luasnip' }
-        }, {
-            { name = 'buffer' }
-        })
-    })
-    
     --Lualine configuration
     require 'lualine'.setup{
         options = {
-            theme = 'onedark'
+            theme = 'onedark',
+            disabled_filetypes = { "NvimTree", "dashboard" }
         }
     }
     
     --Bufferline import
-    require 'bufferline'.setup{}
+    require 'bufferline'.setup{
+        options = {
+            diagnostics = "coc",
+            diagnostics_update_in_insert = true,
+            offsets = {{filetype = "NvimTree", text = "Project Explorer", text_align = "left"}},
+            separator_style = "slant"
+        }
+    }
     
     --web-devicons configuration
     require 'nvim-web-devicons'.setup {
@@ -107,73 +75,186 @@ lua << eof
     }
     require 'nvim-web-devicons'.get_icons()
 
-    --NvimTree configuration
     require 'nvim-tree'.setup{
-        hijack_cursor = false,
-        hijack_netrw = false,
+        hijack_netrw = true,
         view = {
-            width = 34
-        },
-        render = {
-            icons = {
-                webdev_colors = true,
-            },
-        },
+            hide_root_folder = true,
+            height = "100%", 
+            width = 30,
+        }
     }
 
     --Nvim Treesitter configuration
     require 'nvim-treesitter.configs'.setup{
-        ensure_installed = {"css", "html", "javascript"},
+        ensure_installed = {
+          "css",
+          "c_sharp",
+          "html", 
+          "javascript",
+          "python"
+        },
         sync_install = true,
         highlight = {
             enable = true
         }
     }
 
-    --LSPConfig with CMP setup
-    local capabilities = require('cmp_nvim_lsp').update_capabilities(vim.lsp.protocol.make_client_capabilities())
-    require 'lspconfig'.emmet_ls.setup{
-        capabilities = capabilities
-    }
-    require 'lspconfig'.html.setup{
-        capabilities = capabilities
-    }
-    require 'lspconfig'.cssls.setup{
-        capabilities = capabilities
-    }
-    require 'lspconfig'.tsserver.setup{
-        capabilities = capabilities
-    }
-    require 'lspconfig'.tailwindcss.setup{
-        capabilities = capabilities
-    }
-    require 'lspconfig'.pyright.setup{
-        capabilities = capabilities
-    }
+    --Transparent initialization
+    require 'transparent'.setup({
+        enable = true,
+    })
+    
+    --Which Key inicialization.
+    require ("which-key").setup{}
 eof
 
-"" NvimTree auto close and open
-:NvimTreeToggle
-autocmd BufEnter * ++nested if winnr('$') == 1 && bufname() == 'NvimTree_' . tabpagenr() | quit | endif
+"" -------- TERMINAL APPEARANCE --------
 
 "" Terminal encoding
 set encoding=UTF-8
 
-"" NvimTree Mappings
-nnoremap <C-n> :NvimTreeToggle<CR>
+"" Nvim theme setup
+set termguicolors
+:colorscheme atom-dark 
+let g:clap_theme = 'atom-dark'
+highlight NvimTreeNormal guibg=#2c323c
+
+"" -------- DASHBOARD CONFIGURATION --------
+
+"" Create a file explorer function for the dashboard
+function! FileManager(managingType) abort
+    if a:managingType == "create"
+        let folder = system('zenity --file-selection --directory --save')
+    elseif a:managingType == "open"
+        let folder = system('zenity --file-selection --directory')
+    endif
+    let g:formatedFolder = escape(folder, " #")
+    if g:formatedFolder == "" 
+        echo "Canceled"
+    else
+        DashboardNewFile
+        set showtabline=2
+        execute 'cd' g:formatedFolder
+        NvimTreeOpen
+    endif
+endfunction
+
+command OpenFileManager call FileManager("open")
+command CreateFileManager call FileManager("create")
+
+"" SessionLoad handler
+function! HandleLoad() abort
+    SessionLoad
+    set showtabline=2
+    NvimTreeToggle
+endfunction
+
+"" Dashboard global configurations
+let g:dashboard_default_executive='clap'
+let g:dashboard_custom_section={
+  \ 'open_project': {
+    \ 'description': [' Open project folder                 SPC o f'],
+    \ 'command': 'OpenFileManager'
+  \ },
+  \ 'file_history': {
+    \ 'description': [' Recently open files                 SPC f f'],
+    \ 'command': 'Clap history'
+  \ },
+  \ 'create_project': {
+    \ 'description': [' Create a new Project                SPC c n'],
+    \ 'command': 'CreateFileManager'
+  \ },
+  \ 'open_session': {
+    \ 'description': [' Open last session                   SPC o s'],
+    \ 'command': function('HandleLoad')
+  \ }
+\ }
+let g:dashboard_custom_header = [
+\'     ╓N          j╖                                                                                 ',
+\'   φ╫Ñ▒Ñµ        j╫▓▄                                                                               ',
+\',╦╫╫╫╫▒▒▒N       j▓▓▓▓W                                                      ▓▓▓─                   ',
+\'1▒▒╫╫╫▒▒▒▒@.     j▓▓▓▓▓▌                                        ,,,      ,,, ,,,  ,,,  ,╓,    ,╓,   ',
+\'╫▒▒▒▒╫▒▒▒▒▒▒µ    j▓▓▓▓▓▌      J▌╓M╙"╙▀▓µ   ▄M╙└`"╙▄   ,▄▀"╙╙╙▓▄ └▓▓▌     █▓▌ ▓▓▓─ ╫▓▓▓█▀█▓█▄▓█▀▀█▓▓ ',
+\'╫▒▒▒▒▒╨╫ÑÑÑÑÑ@   j▓▓▓▓▓▌      J█       █  ▓Ö       ▓ J▌       ▐▓ ▐▓▓▄   ▓▓█  ▓▓▓─ ╫▓▓H   ▐▓▓▌   J▓▓▌',
+\'╫▒▒▒▒▒  ╝ÑÑÑÑÑÑµ j▓▓▓▓▓▌      J▓       ▓  ▓ªªªªªªªª▀ ▓h        ▓H ▀▓▓µ ▓▓█   ▓▓▓─ ╫▓▓H   ▐▓▓▌    ▓▓▌',
+\'╫▒▒▒▒▒   ²╫ÑÑÑÑÑ@▐▓▓▓▓▓▌      J▓       ▓  █          ▀▌        ▓   ▀▓█▐▓█    ▓▓▓─ ╫▓▓H   ▐▓▓▌    ▓▓▌',
+\'╫ÑÑÑÑÑ     ╫╫╫╫╫╫╫▓▓▓▓▓▌      J▓       ▓  `▓▄     ,µ  ▀▄     ,▓╜    █▓▓▓╛    ▓▓▓─ ╫▓▓H   ▐▓▓▌    ▓▓▌',
+\'╫ÑÑÑÑÑ      ╙╫╫╫╫╫▓▓▓▓▓▓       ╙       ╙    `╙╙╨╨╙      ╙╙*╜╙`       ""`     """  """    `""`    ""╙',
+\'ª╫ÑÑÑÑ       `╫╫╫╫▓▓▓▓▓╨                                                                            ',
+\'  ²╫╫╫         ╙╫╫▓▓▓"                                                                              ',
+\'    `╝          `▓▀`                                                                                '
+\]
+
+"" Exclude indentline and bufferline from the dashboard
+let g:indentLine_fileTypeExclude = ['dashboard']
+autocmd FileType dashboard set showtabline=0 | autocmd WinLeave <buffer> set showtabline=2
+
+"" -------- CLAP DASHBOARD AUTOMATION --------
+
+"" Variable used to cast the initial automation of the Clap files only on
+"" the initialization of the app.
+let g:dashOpen=1
+
+"" Automaticaly open a blank file if a folder is open instead of a file. If
+"" the buffer is closed on the dashboard or after the initialization, the
+"" automation doesn't apply.
+function! BufferCheck()
+  if g:dashOpen == 1
+    if &filetype == 'dashboard'
+      "do nothing
+    else
+      cd %:p:h
+      NvimTreeOpen
+      let g:dashOpen=0
+    endif
+  endif
+endfunction
+autocmd User ClapOnExit call BufferCheck()
+
+"" -------- COC.NVIM CONFIGURATION --------
+
+"" Default Coc language servers
+let g:coc_global_extensions = [
+\ 'coc-tsserver',
+\ 'coc-pyright',
+\ 'coc-java',
+\ 'coc-json',
+\ 'coc-css',
+\ 'coc-html'
+\]
+
+"" -------- OMNISHARP CONFIGURATION --------
+
+"" Require dotnet core 6 processing on OmniSharp
+let g:OmniSharp_server_use_net6 = 1
+
+"" -------- ALE FIXERS AND KEY MAPPINGS --------
+
+"" Ale configuration for ESLint, prettier and python
+let g:ale_fixers = {
+\    'cs': ['dotnet-format'],
+\    'python': ['pyright', 'autopep8'],
+\    'javascriptreact': ['prettier', 'eslint'],
+\    'javascript': ['prettier', 'eslint'],
+\    'css': ['prettier']
+\}
+
+"" Ale Key Mapping
+nnoremap <silent>\af :ALEFix<CR>
+
+"" -------- NVIM TREE KEYMAPINGS --------
+
+nnoremap <silent>n :NvimTreeFocus<CR>
+nnoremap <C-n> :NvimTreeOpen<CR>
 nnoremap <C-r> :NvimTreeRefresh<CR>
+nnoremap <C-t> :NvimTreeToggle<CR>
 
-"" Telescope Mappings
-nnoremap <leader>ff :Telescope find_files<CR>
+"" -------- BUFFERLINE KEY MAPPINGS --------
 
-""Bufferline Mappings
 nnoremap <silent>\b :BufferLineCyclePrev<CR>
 nnoremap <silent>\f :BufferLineCycleNext<CR>
 
-"" FTerm Mappings
-nnoremap <C-t> :lua require("FTerm").toggle()<CR>
-
-nnoremap <silent>\af :ALEFix<CR>
+"" -------- MISC CONFIGS AND AUTOMATIONS --------
 
 "" Open terminal bellow files
 let g:term_buf = 0
@@ -198,5 +279,21 @@ function! TermToggle(height)
         let g:term_win = win_getid()
     endif
 endfunction
-
 nnoremap <silent>\t :call TermToggle(10)<CR>
+
+"" Remove StatusLine from NvimTree
+function! RemoveSL() abort
+    if &filetype == "dashboard"
+        highlight StatusLine guibg=NONE guifg=NONE
+    else
+        highlight StatusLine guibg=#2c323c guifg=#2c323c
+        highlight StatusLineNC guibg=#2c323c guifg=#2c323c
+    endif
+    highlight EndOfBuffer guifg=#2c323c
+endfunction
+autocmd FileType NvimTree call RemoveSL()
+autocmd FileType dashboard call RemoveSL()
+
+"" Custom Nvim commands
+command DotnetRun terminal dotnet run
+command AleSave ALEFix || w

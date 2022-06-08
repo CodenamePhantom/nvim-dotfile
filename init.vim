@@ -9,6 +9,7 @@ set cursorline              " enable line location for the cursor position
 set hlsearch                " highlight search 
 set incsearch               " incremental search
 set visualbell              " dont make noise
+set updatetime=1000         " Set the CursorHold timer to 1 second
 set tabstop=2               " number of columns occupied by a tab 
 set softtabstop=2           " see multiple spaces as tabstops so <BS> does the right thing
 set expandtab               " converts tabs to white space
@@ -23,13 +24,15 @@ filetype plugin indent on   " allow auto-indenting depending on file type
 syntax on                   " syntax highlighting
 set mouse=a                 " enable mouse click
 filetype plugin on
+set laststatus=3
+set signcolumn=yes
 
 "" -------- INSTALATIONS AND IMPORT --------
 
 "" Plugin installation and calling
 call plug#begin('~/.config/nvim/plugged')
   
-    Plug 'neoclide/coc.nvim', {'branch': 'release'}
+    Plug 'neoclide/coc.nvim'
     Plug 'OmniSharp/omnisharp-vim'
     Plug 'lukas-reineke/indent-blankline.nvim'
     Plug 'tpope/vim-fugitive'
@@ -43,10 +46,10 @@ call plug#begin('~/.config/nvim/plugged')
     Plug 'nvim-lua/plenary.nvim'
     Plug 'liuchengxu/vim-clap'
     Plug 'sonph/onehalf', {'rtp': 'vim/'}
+    Plug 'pineapplegiant/spaceduck'
+    Plug 'marko-cerovac/material.nvim'
     Plug 'folke/which-key.nvim'
-    Plug 'xiyaowong/nvim-transparent'
-    Plug 'christoomey/vim-tmux-navigator'
-
+    
 call plug#end()
 
 "" Plugin importing with LUA
@@ -54,8 +57,8 @@ lua << eof
     --Lualine configuration
     require 'lualine'.setup{
         options = {
-            theme = 'onedark',
-            disabled_filetypes = { "NvimTree", "dashboard" }
+            theme = 'material-nvim',
+                disabled_filetypes = { "dashboard" }
         }
     }
     
@@ -64,7 +67,7 @@ lua << eof
         options = {
             diagnostics = "coc",
             diagnostics_update_in_insert = true,
-            offsets = {{filetype = "NvimTree", text = "Project Explorer", text_align = "left"}},
+            offsets = {{filetype = "NvimTree", text = "File Explorer", text_align = "left"}},
             separator_style = "slant"
         }
     }
@@ -78,9 +81,18 @@ lua << eof
     require 'nvim-tree'.setup{
         hijack_netrw = true,
         view = {
-            hide_root_folder = true,
             height = "100%", 
             width = 30,
+        },
+        renderer = {
+            add_trailing = true,
+            indent_markers = {
+                enable = true
+            }
+        },
+        diagnostics = {
+            enable = true,
+            show_on_dirs = true
         }
     }
 
@@ -91,6 +103,7 @@ lua << eof
           "c_sharp",
           "html", 
           "javascript",
+          "java",
           "python"
         },
         sync_install = true,
@@ -99,11 +112,6 @@ lua << eof
         }
     }
 
-    --Transparent initialization
-    require 'transparent'.setup({
-        enable = true,
-    })
-    
     --Which Key inicialization.
     require ("which-key").setup{}
 eof
@@ -114,10 +122,10 @@ eof
 set encoding=UTF-8
 
 "" Nvim theme setup
+let g:material_style='deep ocean'
 set termguicolors
-:colorscheme atom-dark 
-let g:clap_theme = 'atom-dark'
-highlight NvimTreeNormal guibg=#2c323c
+:colorscheme material
+let g:clap_theme = 'material'
 
 "" -------- DASHBOARD CONFIGURATION --------
 
@@ -128,13 +136,19 @@ function! FileManager(managingType) abort
     elseif a:managingType == "open"
         let folder = system('zenity --file-selection --directory')
     endif
-    let g:formatedFolder = escape(folder, " #")
-    if g:formatedFolder == "" 
+    let formatedFolder = escape(folder, " #")
+    let searchCode = "ls " . formatedFolder
+    let hasItens = system(searchCode)
+    if formatedFolder == "" 
         echo "Canceled"
     else
-        DashboardNewFile
+        if hasItens == ""
+            terminal
+        else
+            DashboardNewFile
+        endif
         set showtabline=2
-        execute 'cd' g:formatedFolder
+        execute 'cd' formatedFolder
         NvimTreeOpen
     endif
 endfunction
@@ -149,25 +163,45 @@ function! HandleLoad() abort
     NvimTreeToggle
 endfunction
 
+"" Open config file
+function! OpenConfig() abort
+    e ~/.config/nvim/init.vim
+    cd %:p:h
+    set showtabline=2
+    NvimTreeOpen
+endfunction
+
 "" Dashboard global configurations
 let g:dashboard_default_executive='clap'
 let g:dashboard_custom_section={
-  \ 'open_project': {
-    \ 'description': [' Open project folder                 SPC o f'],
-    \ 'command': 'OpenFileManager'
-  \ },
-  \ 'file_history': {
-    \ 'description': [' Recently open files                 SPC f f'],
-    \ 'command': 'Clap history'
-  \ },
-  \ 'create_project': {
-    \ 'description': [' Create a new Project                SPC c n'],
-    \ 'command': 'CreateFileManager'
-  \ },
-  \ 'open_session': {
-    \ 'description': [' Open last session                   SPC o s'],
-    \ 'command': function('HandleLoad')
-  \ }
+    \ 'open_project': {
+        \ 'description': [' Open project folder                                 SPC o f'],
+        \ 'command': 'OpenFileManager'
+    \ },
+    \ 'file_history': {
+        \ 'description': [' Recently open files                                 SPC f f'],
+        \ 'command': "Clap history"
+    \ },
+    \ 'create_project': {
+        \ 'description': [' Create a new Project                                SPC c n'],
+        \ 'command': 'CreateFileManager'
+    \ },
+    \ 'open_session': {
+        \ 'description': [' Open last session                                   SPC o s'],
+        \ 'command': function('HandleLoad')
+    \ },
+    \ 'update_plugins': {
+        \ "description": [' Update installed plugins                            SPC u p'],
+        \ "command": 'PlugUpdate',
+    \ },
+    \ 'update_lsp': {
+        \ "description": [' Update installed language servers                   SPC u l'],
+        \ "command": 'CocUpdate'
+    \ },
+    \ 'config_file': {
+        \ "description": [' Open configuration file                             SPC o i'],
+        \ "command": function('OpenConfig')
+    \ }
 \ }
 let g:dashboard_custom_header = [
 \'     ╓N          j╖                                                                                 ',
@@ -199,36 +233,69 @@ let g:dashOpen=1
 "" the buffer is closed on the dashboard or after the initialization, the
 "" automation doesn't apply.
 function! BufferCheck()
-  if g:dashOpen == 1
-    if &filetype == 'dashboard'
-      "do nothing
-    else
-      cd %:p:h
-      NvimTreeOpen
-      let g:dashOpen=0
+    if g:dashOpen == 1
+        if &filetype == 'dashboard'
+            "do nothing
+        else
+            cd %:p:h
+            NvimTreeOpen
+            let g:dashOpen=0
+        endif
     endif
-  endif
 endfunction
 autocmd User ClapOnExit call BufferCheck()
 
-"" -------- COC.NVIM CONFIGURATION --------
+nnoremap <C-l> <Plug>(coc-snippets-expand)<CR>
+
+"" -------- COC CONFIGURATION --------
 
 "" Default Coc language servers
 let g:coc_global_extensions = [
+\ 'coc-highlight',
+\ 'coc-emmet',
+\ 'coc-snippets',
+\ 'coc-lightbulb',
+\ 'coc-pairs',
 \ 'coc-tsserver',
+\ 'coc-tailwindcss',
 \ 'coc-pyright',
 \ 'coc-java',
 \ 'coc-json',
 \ 'coc-css',
-\ 'coc-html'
+\ 'coc-html',
+\ 'coc-html-css-support'
 \]
+
+nnoremap <leader>rn <Plug>(coc-rename)
+
 
 "" -------- OMNISHARP CONFIGURATION --------
 
 "" Require dotnet core 6 processing on OmniSharp
 let g:OmniSharp_server_use_net6 = 1
 
+let g:OmniSharp_server_display_loading = 1
+
+let g:OmniSharp_highlighting = 3
+
+let g:OmniSharp_selector_ui = ''
+
+let extension = expand('%:e')
+
+    
 "" -------- ALE FIXERS AND KEY MAPPINGS --------
+
+let g:ale_disable_lsp=1
+let g:ale_echo_cursor=0
+let g:ale_cursor_detail=1
+let g:ale_cspell_executable=''
+let g:ale_hover_to_preview=1
+let g:ale_cspell_use_global=0
+set previewheight=3
+set splitbelow
+
+let g:ale_sign_error = ''
+let g:ale_sign_warning = ''
 
 "" Ale configuration for ESLint, prettier and python
 let g:ale_fixers = {
@@ -236,6 +303,7 @@ let g:ale_fixers = {
 \    'python': ['pyright', 'autopep8'],
 \    'javascriptreact': ['prettier', 'eslint'],
 \    'javascript': ['prettier', 'eslint'],
+\    'java': ['javac'],
 \    'css': ['prettier']
 \}
 
@@ -283,17 +351,34 @@ nnoremap <silent>\t :call TermToggle(10)<CR>
 
 "" Remove StatusLine from NvimTree
 function! RemoveSL() abort
-    if &filetype == "dashboard"
-        highlight StatusLine guibg=NONE guifg=NONE
-    else
-        highlight StatusLine guibg=#2c323c guifg=#2c323c
-        highlight StatusLineNC guibg=#2c323c guifg=#2c323c
-    endif
-    highlight EndOfBuffer guifg=#2c323c
+    let color=synIDattr(hlID("Normal"), "bg")
+    execute "highlight StatusLine guibg="color "guifg="color
+    execute "highlight EndOfBuffer guifg="color
 endfunction
-autocmd FileType NvimTree call RemoveSL()
 autocmd FileType dashboard call RemoveSL()
+
+"" Switch Highlight and codeAction between Coc and OmniSharp
+function! CurrentLSP() abort
+    augroup AutoSave
+        autocmd TextChanged,InsertLeave <buffer> if &readonly == 0 | silent w | echo "Auto Save" | endif
+    augroup END
+    if expand('%:e') == 'cs'
+        echo "OmniSharp controls enabled"
+        nnoremap <C-q> :OmniSharpGetCodeAction<CR>
+        autocmd! OmniDoc silent OmniSharpDocumentation
+        autocmd CursorMoved * silent OmniSharpHighlight
+        autocmd TextChanged,InsertLeave * silent OmniSharpCodeFormat
+    elseif expand('%:e') == ''
+        autocmd! AutoSave
+    else
+        echo "CoC.nvim controls enabled"
+        nnoremap <C-q> :call CocAction('codeAction', ['cursor', 'quickfix'])<CR>
+        command! CocDoc silent call CocAction('doHover')
+        autocmd CursorMoved * silent call CocAction('highlight')
+        autocmd TextChanged,InsertLeave * silent call CocAction('format')
+    endif
+endfunction
+autocmd BufEnter * call CurrentLSP()
 
 "" Custom Nvim commands
 command DotnetRun terminal dotnet run
-command AleSave ALEFix || w

@@ -1,9 +1,25 @@
 {
+  "diagnostic.displayByAle": true,
   "languageserver": {
     "csharp-ls": {
       "command": "csharp-ls",
-      "filetypes": ["cs"],
-      "rootPatterns": ["*.csproj", ".vim/", ".git/", ".hg/"]
+      "filetypes": [
+        "cs"
+      ],
+      "rootPatterns": [
+        "*.csproj",
+        ".vim/",
+        ".git/",
+        ".hg/"
+      ]
     }
-  }
+  },
+  "codeLens.enable": true,
+  "java.referencesCodeLens.enabled": true,
+  "java.configuration.runtimes": [
+    {
+      "name": "JavaSE-17",
+      "path": "/usr/lib/jvm/java-18-openjdk/"
+    }
+  ]
 }
